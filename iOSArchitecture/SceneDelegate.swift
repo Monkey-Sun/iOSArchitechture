@@ -58,7 +58,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             authSession: InMemoryAuthSession(),
             deepLinkRouter: AppDeepLinkMiddleware(),
             notFoundRouteFactory: { originalRoute in
-                UnresolvedDeepLinkRoute.notFound(originalRouteType: String(describing: Swift.type(of: originalRoute)))
+                UnresolvedRoute.notFound(originalRouteType: String(describing: Swift.type(of: originalRoute)))
             }
         )
         

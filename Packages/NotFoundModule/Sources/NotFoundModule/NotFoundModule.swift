@@ -10,7 +10,7 @@ public final class NotFoundModule: AppModuleProviding {
 
     public func registerRouteHandlers(name: String, into resolver: AppModuleBootstrap) {
         resolver.append(moduleName: moduleName) { route, _ in
-            guard let notFoundRoute = route as? UnresolvedDeepLinkRoute else { return nil }
+            guard let notFoundRoute = route as? UnresolvedRoute else { return nil }
             let originalRouteType: String
             switch notFoundRoute {
             case .notFound(let routeType):

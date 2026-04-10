@@ -90,7 +90,7 @@ final class AppCoordinator: Coordinating, AppRoutable {
 
     func handleDeepLink(_ url: URL, from source: UIViewController?) {
         guard let routeToNavigate = deepLinkRouter.route(for: url) else {
-            route(UnresolvedDeepLinkRoute.notFound(originalRouteType: url.absoluteString), from: source)
+            route(UnresolvedRoute.notFound(originalRouteType: url.absoluteString), from: source)
             return
         }
         route(routeToNavigate, from: source)

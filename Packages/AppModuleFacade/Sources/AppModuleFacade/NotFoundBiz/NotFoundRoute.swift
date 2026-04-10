@@ -2,7 +2,7 @@ import UIKit
 import AppRouting
 
 @MainActor
-public enum UnresolvedDeepLinkRoute: Routable {
+public enum UnresolvedRoute: Routable {
     case notFound(originalRouteType: String)
     public var navigationStyle: NavigationStyle {
         .present(animated: true, presentation: .formSheet, wrapInNavigation: true)
