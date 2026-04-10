@@ -1,17 +1,5 @@
 import UIKit
 
-@MainActor
-private struct UnresolvedNavigationContextRoute: Routable {
-    let reason: String
-
-    var navigationStyle: NavigationStyle {
-        .present(animated: true, presentation: .formSheet, wrapInNavigation: true)
-    }
-
-    var requiresAuthentication: Bool { false }
-    var associatedModule: String { "__unresolved_navigation_context__" }
-}
-
 @MainActor public protocol RouteNavigating: AnyObject {
     var rootNavigationController: UINavigationController? { get }
     /// 返回由模块解析出的「内容」控制器（用于与 `pop` 锚定），不含为 present 而包在外层的 `UINavigationController`。
@@ -104,7 +92,6 @@ public final class AppRouter: RouteNavigating {
     ) {
         guard let nav = (source as? UINavigationController) ?? source?.navigationController ?? rootNavigationController else {
             assertionFailure("Push failed: no available UINavigationController")
-            presentFallbackIfPossible(source: source, routing: routing, reason: "Push failed: no available UINavigationController")
             return
         }
 
@@ -162,19 +149,5 @@ public final class AppRouter: RouteNavigating {
         }
 
         assertionFailure("Present failed: no available presenter")
-        presentFallbackIfPossible(source: source, routing: routing, reason: "Present failed: no available presenter")
-    }
-
-    private func presentFallbackIfPossible(source: UIViewController?, routing: AppRoutable, reason: String) {
-        let fallbackRoute = UnresolvedNavigationContextRoute(reason: reason)
-        let fallbackVC = routeViewResolver.makeViewController(for: fallbackRoute, routing: routing)
-        let target = UINavigationController(rootViewController: fallbackVC)
-        if let source {
-            source.present(target, animated: true)
-            return
-        }
-        if let presenter = rootNavigationController?.visibleViewController ?? rootNavigationController {
-            presenter.present(target, animated: true)
-        }
     }
 }
