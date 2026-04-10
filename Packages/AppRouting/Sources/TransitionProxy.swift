@@ -104,7 +104,7 @@ private final class NavigationPopInteractionController: UIPercentDrivenInteracti
         case .began:
             guard navigationController.viewControllers.count > 1 else { return }
             isInteracting = true
-            completionCurve = .easeOut
+            completionCurve = .linear
             navigationController.popViewController(animated: true)
         case .changed:
             guard isInteracting else { return }
@@ -114,7 +114,7 @@ private final class NavigationPopInteractionController: UIPercentDrivenInteracti
             isInteracting = false
             let projectedProgress = progress + (velocityX / max(view.bounds.width, 1)) * 0.2
             let shouldFinish = projectedProgress > 0.5 || velocityX > 900
-            completionSpeed = shouldFinish ? 0.95 : 0.85
+            completionSpeed = 1.0
             if shouldFinish {
                 finish()
             } else {
@@ -123,7 +123,7 @@ private final class NavigationPopInteractionController: UIPercentDrivenInteracti
         case .cancelled, .failed:
             guard isInteracting else { return }
             isInteracting = false
-            completionSpeed = 0.85
+            completionSpeed = 1.0
             cancel()
         default:
             break
