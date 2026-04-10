@@ -4,7 +4,9 @@ import UIKit
     let pushAnimator: UIViewControllerAnimatedTransitioning
     let popAnimator: UIViewControllerAnimatedTransitioning?
     weak var previousDelegate: UINavigationControllerDelegate?
-    var onDidShow: (() -> Void)?
+    weak var trackedViewController: UIViewController?
+    var hasShownTrackedViewController = false
+    var onDidFinishTrackedPop: (() -> Void)?
 
     init(
         pushAnimator: UIViewControllerAnimatedTransitioning,
@@ -35,6 +37,15 @@ import UIKit
         didShow viewController: UIViewController,
         animated: Bool
     ) {
-        onDidShow?()
+        guard let trackedViewController else { return }
+
+        if viewController === trackedViewController {
+            hasShownTrackedViewController = true
+            return
+        }
+
+        if hasShownTrackedViewController, navigationController.viewControllers.contains(where: { $0 === trackedViewController }) == false {
+            onDidFinishTrackedPop?()
+        }
     }
 }

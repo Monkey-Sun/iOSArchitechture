@@ -2,16 +2,19 @@ import UIKit
 
 @MainActor
 public final class FadePushAnimator: NSObject, UIViewControllerAnimatedTransitioning {
-    public override init() {}
+    private let duration: TimeInterval
+
+    public init(duration: TimeInterval = 0.28) {
+        self.duration = duration
+        super.init()
+    }
 
     public func transitionDuration(using transitionContext: (any UIViewControllerContextTransitioning)?) -> TimeInterval {
-        0.28
+        duration
     }
 
     public func animateTransition(using transitionContext: any UIViewControllerContextTransitioning) {
-        guard
-            let toView = transitionContext.view(forKey: .to)
-        else {
+        guard let toView = transitionContext.view(forKey: .to) else {
             transitionContext.completeTransition(false)
             return
         }
@@ -23,6 +26,42 @@ public final class FadePushAnimator: NSObject, UIViewControllerAnimatedTransitio
         UIView.animate(withDuration: transitionDuration(using: transitionContext), animations: {
             toView.alpha = 1.0
         }, completion: { finished in
+            transitionContext.completeTransition(finished)
+        })
+    }
+}
+
+@MainActor
+public final class FadePopAnimator: NSObject, UIViewControllerAnimatedTransitioning {
+    private let duration: TimeInterval
+
+    public init(duration: TimeInterval = 0.28) {
+        self.duration = duration
+        super.init()
+    }
+
+    public func transitionDuration(using transitionContext: (any UIViewControllerContextTransitioning)?) -> TimeInterval {
+        duration
+    }
+
+    public func animateTransition(using transitionContext: any UIViewControllerContextTransitioning) {
+        guard
+            let fromView = transitionContext.view(forKey: .from),
+            let toView = transitionContext.view(forKey: .to)
+        else {
+            transitionContext.completeTransition(false)
+            return
+        }
+
+        let container = transitionContext.containerView
+        if toView.superview == nil {
+            container.insertSubview(toView, belowSubview: fromView)
+        }
+
+        UIView.animate(withDuration: transitionDuration(using: transitionContext), animations: {
+            fromView.alpha = 0.0
+        }, completion: { finished in
+            fromView.alpha = 1.0
             transitionContext.completeTransition(finished)
         })
     }

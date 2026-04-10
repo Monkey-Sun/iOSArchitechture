@@ -13,7 +13,10 @@ public enum HomeRoute: Routable {
         case .detail:
             return .push(
                 animated: true,
-                transition: .custom(pushAnimator: FadePushAnimator())
+                transition: .custom(
+                    pushAnimator: FadePushAnimator(),
+                    popAnimator: FadePopAnimator()
+                )
             )
         }
     }

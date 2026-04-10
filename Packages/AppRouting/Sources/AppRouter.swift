@@ -102,10 +102,15 @@ public final class AppRouter: RouteNavigating {
             let proxy = PushTransitionProxy(pushAnimator: pushAnimator, popAnimator: popAnimator)
             let key = ObjectIdentifier(nav)
             proxy.previousDelegate = nav.delegate
-            proxy.onDidShow = { [weak self, weak nav] in
+            proxy.trackedViewController = destination
+            proxy.onDidFinishTrackedPop = { [weak self, weak nav, weak proxy] in
                 guard let nav else { return }
                 let key = ObjectIdentifier(nav)
-                nav.delegate = proxy.previousDelegate
+                if let proxy {
+                    nav.delegate = proxy.previousDelegate
+                } else {
+                    nav.delegate = nil
+                }
                 self?.activePushProxies[key] = nil
             }
             activePushProxies[key] = proxy
