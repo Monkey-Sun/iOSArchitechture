@@ -26,7 +26,11 @@ public final class FadePushAnimator: NSObject, UIViewControllerAnimatedTransitio
         UIView.animate(withDuration: transitionDuration(using: transitionContext), animations: {
             toView.alpha = 1.0
         }, completion: { finished in
-            transitionContext.completeTransition(finished)
+            let cancelled = transitionContext.transitionWasCancelled
+            if cancelled {
+                toView.removeFromSuperview()
+            }
+            transitionContext.completeTransition(!cancelled && finished)
         })
     }
 }
@@ -54,6 +58,7 @@ public final class FadePopAnimator: NSObject, UIViewControllerAnimatedTransition
         }
 
         let container = transitionContext.containerView
+        let insertedToView = toView.superview == nil
         if toView.superview == nil {
             container.insertSubview(toView, belowSubview: fromView)
         }
@@ -61,8 +66,12 @@ public final class FadePopAnimator: NSObject, UIViewControllerAnimatedTransition
         UIView.animate(withDuration: transitionDuration(using: transitionContext), animations: {
             fromView.alpha = 0.0
         }, completion: { finished in
+            let cancelled = transitionContext.transitionWasCancelled
             fromView.alpha = 1.0
-            transitionContext.completeTransition(finished)
+            if cancelled, insertedToView {
+                toView.removeFromSuperview()
+            }
+            transitionContext.completeTransition(!cancelled && finished)
         })
     }
 }
