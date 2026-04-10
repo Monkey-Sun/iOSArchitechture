@@ -147,9 +147,10 @@ flowchart TB
 ```text
 Packages/OrderModule
 ├── Package.swift
+│   └──OrderBiz
+│      └── OrderRoute.swift
 ├── Sources/OrderModule
 │   ├── OrderModule.swift
-│   ├── OrderRoute.swift
 │   └── OrderViewController.swift
 └── Tests/OrderModuleTests
     └── OrderModuleTests.swift
@@ -158,8 +159,6 @@ Packages/OrderModule
 ### 2) Route 示例
 
 ```swift
-import AppModuleFacade
-
 @MainActor
 public enum OrderRoute: Routable {
     case list
