@@ -1,0 +1,67 @@
+# =========================
+# Swift Package Manager
+# =========================
+.build/
+.swiftpm/
+Package.resolved
+
+# 如果你是库开发者，建议忽略
+# 如果是 App / 可执行项目，可以保留
+# Package.resolved
+
+# =========================
+# Xcode
+# =========================
+DerivedData/
+*.xcworkspace
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.xcscmblueprint
+
+# Xcode build
+build/
+
+# =========================
+# macOS
+# =========================
+.DS_Store
+
+# =========================
+# Logs & temp
+# =========================
+*.log
+*.tmp
+*.swp
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.local
+.env.*.local
+
+# =========================
+# Fastlane（如果有）
+# =========================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# =========================
+# CocoaPods（如果混用）
+# =========================
+Pods/
+Podfile.lock
+
+# =========================
+# Carthage（如果混用）
+# =========================
+Carthage/Build/
+
+# =========================
+# Mint（如果用）
+# =========================
+.mint/
