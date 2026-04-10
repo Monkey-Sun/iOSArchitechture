@@ -12,9 +12,9 @@ typealias RouteResolver = (Routable, AppRoutable) -> UIViewController?
 public final class AppModuleBootstrap: RouteViewResolving {
     private var handlers: [String: RouteResolver] = [:]
     private var unresolvedRouteFallback: ((Routable) -> Routable?)?
-
+    
     public init() {}
-
+    
     public func append(moduleName: String, _ handler: @escaping (Routable, AppRoutable) -> UIViewController?) {
         if handlers[moduleName] != nil {
             assertionFailure("Duplicate RouteViewResolver handler registration for module: \(moduleName)")
@@ -22,12 +22,12 @@ public final class AppModuleBootstrap: RouteViewResolving {
         }
         handlers[moduleName] = handler
     }
-
+    
     /// 配置“路由未命中”时的统一回退路由（例如业务注入的 404 路由）。
     public func setUnresolvedRouteFallback(_ fallback: @escaping (Routable) -> Routable?) {
         unresolvedRouteFallback = fallback
     }
-
+    
     public func makeViewController(for route: Routable, routing: AppRoutable) -> UIViewController {
         if let handler = handlers[route.associatedModule], let vc = handler(route, routing) {
             return vc

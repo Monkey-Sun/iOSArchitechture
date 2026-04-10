@@ -17,7 +17,7 @@ public final class LoginModule: AppModuleProviding {
             case LoginRoute.login(let cb):
                 let vc = LoginViewController(call: cb, routing: routing)
                 vc.routing = routing
-                return nil
+                return vc
             default:
                 return nil
             }
