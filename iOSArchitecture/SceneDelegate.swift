@@ -20,7 +20,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
-        initBizService()
         viewInit(windowScene: windowScene)
     }
     
@@ -52,10 +51,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
     }
     
-    func initBizService() {
-        AppService.register(ILoginService.self, LoginService())
-    }
-    
     func viewInit(windowScene: UIWindowScene) {
         let window = UIWindow(windowScene: windowScene)
         
@@ -82,11 +77,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             dependencies: dependencies,
         )
         
-        AppService.register(AppRoutable.self, adaptor.routing)
-        
+        initBizService(adaptor.routing)
         adaptor.start()
         globalRoute = adaptor
         self.window = window
+    }
+    
+    func initBizService(_ r: AppRoutable) {
+        AppService.register(AppRoutable.self, r)
+        AppService.register(ILoginService.self, LoginService())
     }
 }
 

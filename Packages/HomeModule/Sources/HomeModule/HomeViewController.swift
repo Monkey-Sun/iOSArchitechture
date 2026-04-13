@@ -92,6 +92,7 @@ final class HomeViewController: UIViewController {
     @objc
     private func onPopToHomeRoot() {
         routing.popToRoot(in: AppModuleName.home.tabIndex, animated: true)
+        AppService.resolve(ILoginService.self)?.logout()
     }
 
     @objc

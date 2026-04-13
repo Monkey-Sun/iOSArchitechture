@@ -59,18 +59,22 @@ final class AppCoordinator: Coordinating, AppRoutable {
         addLoginObserve()
     }
     
-    func addLoginObserve()  {
-        let loginHandler = AppEventHandler<Bool, Void> { [weak self] login in
+    func addLoginObserve() {
+        AppService.resolve(ILoginService.self)?.loginEventBus.on { [weak self] (event: LoginAuthStateEvent) in
             guard let self else { return }
-            if login {
+            if event.isLoggedIn {
                 self.authSession.markAuthenticated()
             } else {
                 self.authSession.markLoggedOut()
             }
         }
-        AppService.resolve(ILoginService.self)?.loginEventBus.add(loginHandler)
+        
+        AppService.resolve(ILoginService.self)?.loginEventBus.on { [weak self] (event: RefreshEvent) in
+            guard let self else { return }
+            print("refreshed")
+        }
     }
-    
+    var lastToken: UUID?
     func route(_ requestedRoute: Routable, from source: UIViewController? = nil) {
         if requestedRoute is LoginRoute {
             performRouteReturningContent(
@@ -80,15 +84,18 @@ final class AppCoordinator: Coordinating, AppRoutable {
             return
         }
         if requestedRoute.requiresAuthentication && !authSession.isAuthenticated {
-            var routeHandler: AppEventHandler<Bool, Void>!
-            routeHandler = AppEventHandler<Bool, Void> { [weak self] login in
+            if let id = lastToken {
+                AppService.resolve(ILoginService.self)?.loginEventBus.remove(id)
+            }
+            var routeSub: AppEventSubscription!
+            routeSub = AppService.resolve(ILoginService.self)?.loginEventBus.on { [weak self] (event: LoginAuthStateEvent) in
                 guard let self else { return }
-                if login {
+                if event.isLoggedIn {
                     self.route(requestedRoute, from: source)
                 }
-                AppService.resolve(ILoginService.self)?.loginEventBus.remove(routeHandler)
+                AppService.resolve(ILoginService.self)?.loginEventBus.remove(routeSub)
             }
-            AppService.resolve(ILoginService.self)?.loginEventBus.add(routeHandler)
+            lastToken = routeSub.id
             performRouteReturningContent(
                 LoginRoute.login,
                 resolvedSource: source

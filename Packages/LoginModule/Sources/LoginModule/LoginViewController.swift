@@ -71,7 +71,8 @@ final class LoginViewController: UIViewController, UIAdaptivePresentationControl
     private func onTapLogin() {
         didFinishThroughPop = true
         routing.pop(from: self, animated: true)
-        AppService.resolve(ILoginService.self)?.loginEventBus.fire(true)
+        AppService.resolve(ILoginService.self)?.loginEventBus.post(LoginAuthStateEvent(isLoggedIn: true))
+        AppService.resolve(ILoginService.self)?.loginEventBus.post(RefreshEvent())
     }
 
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {

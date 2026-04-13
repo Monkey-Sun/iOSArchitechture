@@ -7,10 +7,11 @@
 
 import Foundation
 
+@MainActor
 public protocol AppServiceProtocol {
     var serviceName: String { get }
 }
 
 extension AppServiceProtocol {
-    var serviceName: String { "" }
+    public var serviceName: String { "" }
 }

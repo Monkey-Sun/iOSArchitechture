@@ -10,5 +10,9 @@ import Foundation
 public protocol ILoginService: AppServiceProtocol {
     func toLogin()
     
-    var loginEventBus: AppEventBus<Bool, Void> { get }
+    func logout()
+    
+    var loginEventBus: AppEventBus { get }
+    
+    var userInfo: [String : Any] { get }
 }

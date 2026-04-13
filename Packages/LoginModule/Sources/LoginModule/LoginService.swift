@@ -9,15 +9,24 @@ import Foundation
 import AppModuleFacade
 
 public class LoginService: @MainActor ILoginService {
-    let loginBus = AppEventBus<Bool, Void>()
+    public func logout() {
+        print("logout")
+        self.loginBus.post(LoginAuthStateEvent(isLoggedIn: false))
+    }
+    
+    let loginBus = AppEventBus()
+    
     public init() {}
+    
     @MainActor
     public func toLogin() {
         AppService.resolve(AppRoutable.self)?.route(LoginRoute.login, from: nil)
     }
     
-    public var loginEventBus: AppEventBus<Bool, Void> { loginBus }
+    public var loginEventBus: AppEventBus { loginBus }
     
     
     public var serviceName: String { "LoginService" }
+    
+    public var userInfo: [String : Any] { ["userName": "孙俊祥", "sex": 1] }
 }
