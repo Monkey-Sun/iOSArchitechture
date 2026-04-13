@@ -83,6 +83,7 @@ iOSArchitecture
 - **DeepLink 先校验后映射**：先做 scheme/host 白名单校验，再做 path/query 到内部路由的转换，默认保守放行。
 - **兜底可观测**：未匹配路由统一进入 `NotFoundModule`，保证异常路径可见、可追踪，而不是静默失败。
 - **新增模块最小改动**：新增业务能力时，优先通过“新增模块 + 注册路由 + 场景装配”扩展，避免修改既有模块核心逻辑。
+- **跨模块轻量通知走事件总线**：适合“不关心具体接收方”的广播（如会话状态）；需要落页、入栈、切 Tab 仍以路由为主，避免用事件替代导航导致流程难追踪。
 
 ## 架构图
 
@@ -95,6 +96,7 @@ flowchart TB
     C --> E[AppModuleFacade]
     E --> F[AppRouting]
     E --> G[AppDependencies]
+    E --> EB[AppEventBus]
 
     subgraph Tabs[Tab Modules]
       H[HomeModule]
@@ -120,6 +122,9 @@ flowchart TB
     L --> F
 
     D --> F
+
+    K -.->|post AppBusEvent| EB
+    EB -.->|subscribe via Coordinator| C
 ```
 
 说明：
@@ -128,6 +133,30 @@ flowchart TB
 - `AppDeepLinkMiddleware` 负责 URL 到内部 `Route` 的转换。
 - `AppNavigationAdaptor` 统一协调 Tab 模块与非 Tab 模块导航。
 - 各业务模块通过 `AppRouting` 对齐统一路由与导航协议。
+- `AppEventBus` 由 `AppModuleFacade` 提供类型与实现；`LoginModule` 经 `ILoginService.loginEventBus` 投递事件，`AppNavigationAdaptor` 内的 `AppCoordinator` 订阅并更新会话 / 鉴权后续导航（虚线为事件流，实线仍为依赖与路由）。
+
+## 模块间互相调用（AppEventBus）
+
+除 **路由导航**（`AppRoutable` / `Routable`）外，项目用 `AppModuleFacade` 中的 **`AppEventBus`** 做 **发布—订阅式** 的跨模块通知：派发与订阅都在 **`@MainActor`** 上执行；事件类型需遵循 `AppBusEvent`（`Sendable`），`post` 时只通知订阅了 **同一事件类型** 的监听者。
+
+### 与路由的分工
+
+| 场景 | 推荐方式 |
+| --- | --- |
+| 打开页面、切换 Tab、DeepLink 落地 | 路由（`route(_:from:)` 等） |
+| 广播状态变化、触发与具体 UI 解耦的副作用 | `AppEventBus`（如登录态同步） |
+
+### 当前代码中的用法（登录域）
+
+1. **总线从哪来**：`ILoginService` 协议要求实现方提供 `loginEventBus: AppEventBus`。`LoginModule` 的 `LoginService` 内部持有一个 `AppEventBus` 实例并对外暴露，由 `AppService` 在壳层注册后全局解析。
+2. **谁发事件**：`LoginService.logout()` 会 `post(LoginAuthStateEvent(isLoggedIn: false))`；`LoginViewController` 在模拟登录成功时 `post(LoginAuthStateEvent(isLoggedIn: true))` 与 `post(RefreshEvent())`。事件类型 `LoginAuthStateEvent`、`RefreshEvent` 定义在 `AppModuleFacade`（`LoginBiz`），业务模块只依赖门面即可发事件。
+3. **谁收事件**：`AppCoordinator.addLoginObserve()` 中对 `loginEventBus` 调用 `on { (event: LoginAuthStateEvent) in ... }` 与 `on { (event: RefreshEvent) in ... }`，用于更新 `AuthenticationSessionManaging`（登录/登出）等应用层逻辑；在 **`route` 鉴权拦截**（需登录却未登录）时，会注册 **一次性** `LoginAuthStateEvent` 订阅，在用户登录成功后 **继续原先请求的路由** 并 `remove` 该订阅，避免重复触发。
+
+### 约定与扩展建议
+
+- **事件类型放在门面层**：与 `LoginAuthStateEvent` 一样放在 `AppModuleFacade`，便于各模块依赖一致类型而不互相引用实现。
+- **总线实例由组合根装配**：通过某 `AppServiceProtocol` 暴露 `AppEventBus`，而不是让模块 A 直接持有模块 B 的类型。
+- **订阅记得移除**：`on` 返回 `AppEventSubscription`（内含 `id`），长期订阅在适当时机应 `remove`；临时订阅（如上述登录后继续导航）必须在回调里或完成后移除，避免泄漏与重复执行。
 
 ## 路由命名规范（建议）
 
