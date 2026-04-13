@@ -7,17 +7,16 @@
 
 import UIKit
 import AppRouting
+import AppModuleFacade
 
 @MainActor
 final class LoginViewController: UIViewController, UIAdaptivePresentationControllerDelegate {
     var routing: AppRoutable
-    let loginCallback: ((Bool)->Void)?
     private var didFinishThroughPop = false
     
     
     
-    init(call: ((Bool)->Void)?, routing: AppRoutable) {
-        self.loginCallback = call
+    init(routing: AppRoutable) {
         self.routing = routing
         super.init(nibName: nil, bundle: nil)
     }
@@ -72,7 +71,7 @@ final class LoginViewController: UIViewController, UIAdaptivePresentationControl
     private func onTapLogin() {
         didFinishThroughPop = true
         routing.pop(from: self, animated: true)
-        loginCallback?(true)
+        AppService.resolve(ILoginService.self)?.loginEventBus.fire(true)
     }
 
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {

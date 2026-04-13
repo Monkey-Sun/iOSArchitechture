@@ -13,7 +13,7 @@ import AppRouting
 @MainActor
 public enum LoginRoute: Routable {
     
-    case login(callback: ((Bool)->Void)? = nil)
+    case login
 
     public var navigationStyle: NavigationStyle {
         .present(

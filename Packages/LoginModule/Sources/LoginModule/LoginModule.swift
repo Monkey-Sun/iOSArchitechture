@@ -14,8 +14,9 @@ public final class LoginModule: AppModuleProviding {
     public func registerRouteHandlers(name: String, into resolver: AppModuleBootstrap) {
         resolver.append(moduleName: moduleName) { route, routing in
             switch route {
-            case LoginRoute.login(let cb):
-                let vc = LoginViewController(call: cb, routing: routing)
+            case LoginRoute.login:
+                let vc = LoginViewController(routing: routing)
+                
                 vc.routing = routing
                 return vc
             default:

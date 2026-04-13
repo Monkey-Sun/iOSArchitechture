@@ -71,7 +71,7 @@ final class HomeViewController: UIViewController {
 
     @objc
     private func onPresentProfile() {
-        routing.route(LoginRoute.login(), from: self)
+        routing.route(LoginRoute.login, from: self)
     }
 
     @objc
