@@ -150,13 +150,13 @@ flowchart TB
 
 1. **总线从哪来**：`ILoginService` 协议要求实现方提供 `loginEventBus: AppEventBus`。`LoginModule` 的 `LoginService` 内部持有一个 `AppEventBus` 实例并对外暴露，由 `AppService` 在壳层注册后全局解析。
 2. **谁发事件**：`LoginService.logout()` 会 `post(LoginAuthStateEvent(isLoggedIn: false))`；`LoginViewController` 在模拟登录成功时 `post(LoginAuthStateEvent(isLoggedIn: true))` 与 `post(RefreshEvent())`。事件类型 `LoginAuthStateEvent`、`RefreshEvent` 定义在 `AppModuleFacade`（`LoginBiz`），业务模块只依赖门面即可发事件。
-3. **谁收事件**：`AppCoordinator.addLoginObserve()` 中对 `loginEventBus` 调用 `on { (event: LoginAuthStateEvent) in ... }` 与 `on { (event: RefreshEvent) in ... }`，用于更新 `AuthenticationSessionManaging`（登录/登出）等应用层逻辑；在 **`route` 鉴权拦截**（需登录却未登录）时，会注册 **一次性** `LoginAuthStateEvent` 订阅，在用户登录成功后 **继续原先请求的路由** 并 `remove` 该订阅，避免重复触发。
+3. **谁收事件**：`AppCoordinator.addLoginObserve()` 将 `on` 返回的 `AppEventSubscription` 存为属性（`loginAuthStateSubscription` / `loginRefreshSubscription`），在 Coordinator 生命周期内持续监听并更新 `AuthenticationSessionManaging`；在 **`route` 鉴权拦截** 时用 `pendingAuthLoginSubscription` 挂 **一次性** 监听，登录成功后继续原先路由，并在回调内 `cancel()` 后置空，避免重复触发（`cancel()` 同步摘钩；句柄释放时也会在 `deinit` 里异步补一次移除，二者幂等）。
 
 ### 约定与扩展建议
 
 - **事件类型放在门面层**：与 `LoginAuthStateEvent` 一样放在 `AppModuleFacade`，便于各模块依赖一致类型而不互相引用实现。
 - **总线实例由组合根装配**：通过某 `AppServiceProtocol` 暴露 `AppEventBus`，而不是让模块 A 直接持有模块 B 的类型。
-- **订阅记得移除**：`on` 返回 `AppEventSubscription`（内含 `id`），长期订阅在适当时机应 `remove`；临时订阅（如上述登录后继续导航）必须在回调里或完成后移除，避免泄漏与重复执行。
+- **订阅生命周期**：`AppEventSubscription` 为类，在 **最后一个强引用释放** 时会自动从总线移除（`deinit` 里调度到 MainActor）；需要长期收事件时务必把句柄存成属性。若要在回调内 **立刻** 摘钩（避免同线程后续 `post` 再次命中），可调用 `cancel()`，仍可与置空属性配合使用。`bus.remove(...)` 仍保留，用于不持有句柄时的显式移除。
 
 ## 路由命名规范（建议）
 

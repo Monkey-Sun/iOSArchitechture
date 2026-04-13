@@ -11,7 +11,11 @@ final class AppCoordinator: Coordinating, AppRoutable {
     private let rootRouter: RouteNavigating
     private let tabRouter: TabRouter
     private let tabBarController: UITabBarController
-    
+
+    private var loginAuthStateSubscription: AppEventSubscription?
+    private var loginRefreshSubscription: AppEventSubscription?
+    private var pendingAuthLoginSubscription: AppEventSubscription?
+
     init(
         window: UIWindow,
         tabs: [TabModuleProviding],
@@ -60,7 +64,8 @@ final class AppCoordinator: Coordinating, AppRoutable {
     }
     
     func addLoginObserve() {
-        AppService.resolve(ILoginService.self)?.loginEventBus.on { [weak self] (event: LoginAuthStateEvent) in
+        guard let bus = AppService.resolve(ILoginService.self)?.loginEventBus else { return }
+        loginAuthStateSubscription = bus.on { [weak self] (event: LoginAuthStateEvent) in
             guard let self else { return }
             if event.isLoggedIn {
                 self.authSession.markAuthenticated()
@@ -68,13 +73,13 @@ final class AppCoordinator: Coordinating, AppRoutable {
                 self.authSession.markLoggedOut()
             }
         }
-        
-        AppService.resolve(ILoginService.self)?.loginEventBus.on { [weak self] (event: RefreshEvent) in
+
+        loginRefreshSubscription = bus.on { [weak self] (event: RefreshEvent) in
             guard let self else { return }
             print("refreshed")
         }
     }
-    var lastToken: UUID?
+
     func route(_ requestedRoute: Routable, from source: UIViewController? = nil) {
         if requestedRoute is LoginRoute {
             performRouteReturningContent(
@@ -84,18 +89,24 @@ final class AppCoordinator: Coordinating, AppRoutable {
             return
         }
         if requestedRoute.requiresAuthentication && !authSession.isAuthenticated {
-            if let id = lastToken {
-                AppService.resolve(ILoginService.self)?.loginEventBus.remove(id)
+            pendingAuthLoginSubscription?.cancel()
+            pendingAuthLoginSubscription = nil
+
+            guard let bus = AppService.resolve(ILoginService.self)?.loginEventBus else {
+                performRouteReturningContent(
+                    LoginRoute.login,
+                    resolvedSource: source
+                )
+                return
             }
-            var routeSub: AppEventSubscription!
-            routeSub = AppService.resolve(ILoginService.self)?.loginEventBus.on { [weak self] (event: LoginAuthStateEvent) in
+            pendingAuthLoginSubscription = bus.on { [weak self] (event: LoginAuthStateEvent) in
                 guard let self else { return }
                 if event.isLoggedIn {
                     self.route(requestedRoute, from: source)
                 }
-                AppService.resolve(ILoginService.self)?.loginEventBus.remove(routeSub)
+                self.pendingAuthLoginSubscription?.cancel()
+                self.pendingAuthLoginSubscription = nil
             }
-            lastToken = routeSub.id
             performRouteReturningContent(
                 LoginRoute.login,
                 resolvedSource: source

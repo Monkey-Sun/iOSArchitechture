@@ -10,13 +10,36 @@ import Foundation
 /// 事件总线载荷类型标记（用法类似 Flutter `package:event_bus` 里的事件类）。
 public protocol AppBusEvent: Sendable {}
 
-/// 订阅句柄，用于 `remove`。
-@MainActor
-public struct AppEventSubscription: Hashable, Sendable {
+/// 订阅句柄：在 **最后一个强引用释放** 时（例如持有者 `deinit`）会自动从总线移除，一般无需再调 `remove`。
+/// - Note: 需要订阅持续生效时，必须把本句柄存成属性（或交给更长生命周期的对象持有）；若像 `on { }` 一样不保存返回值，订阅会在当前语句结束后立刻取消。
+public final class AppEventSubscription: Hashable {
     public let id: UUID
+    nonisolated(unsafe) private weak var bus: AppEventBus?
 
-    fileprivate init(id: UUID) {
+    fileprivate init(id: UUID, bus: AppEventBus) {
         self.id = id
+        self.bus = bus
+    }
+
+    deinit {
+        let id = id
+        Task { @MainActor [weak bus] in
+            bus?.remove(id)
+        }
+    }
+
+    /// 立即取消订阅（仍在 MainActor 上派发回调时，可在回调末尾调用以避免异步 `deinit` 前重复收到事件）。
+    @MainActor
+    public func cancel() {
+        bus?.remove(id)
+    }
+
+    public static func == (lhs: AppEventSubscription, rhs: AppEventSubscription) -> Bool {
+        lhs === rhs
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(ObjectIdentifier(self))
     }
 }
 
@@ -34,7 +57,8 @@ public final class AppEventBus {
     private var handlers: [ObjectIdentifier: [TypedHandler]] = [:]
     private var subscriptionTypeByID: [UUID: ObjectIdentifier] = [:]
 
-    /// `on` 的别名。
+    /// 订阅指定类型事件。返回的 `AppEventSubscription` 需在订阅存活期内 **强引用**（例如存为属性）；
+    /// 不保存返回值时订阅会随临时句柄释放而立刻取消。
     @discardableResult
     public func on<Event: AppBusEvent>(
         _ handler: @escaping @MainActor (Event) -> Void
@@ -47,7 +71,7 @@ public final class AppEventBus {
         }
         handlers[key, default: []].append(typed)
         subscriptionTypeByID[id] = key
-        return AppEventSubscription(id: id)
+        return AppEventSubscription(id: id, bus: self)
     }
 
     public func remove(_ subscription: AppEventSubscription) {
